@@ -2,9 +2,7 @@ package com.tnd.crawl.domain;
 
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Data
 @Entity
@@ -17,4 +15,8 @@ public class Keyword {
     private String keyword;
 
     private String language;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    public Category category;
 }

@@ -40,32 +40,20 @@ public class CrawlApplication implements CommandLineRunner {
 
     @Override
     public void run(String... strings) throws Exception {
-        List<String> keywords = keywordRepository.findAllByLanguage("vi")
-                .stream().map(Keyword::getKeyword).collect(Collectors.toList());
 
-//        String url = "http://soha.vn/lukaku-tra-mon-no-old-trafford-giang-don-chi-mang-vao-man-city-20180405154713833.htm";
-//        News news = crawlService.crawlPages(new Link(url, Source.SOHA), keywords);
+        for (Source source : Source.values()) {
+            List<String> keywords = keywordRepository.findAllByLanguage(source.getLanguage())
+                    .stream().map(Keyword::getKeyword).collect(Collectors.toList());
 
-//        String url = "http://www.xinhuanet.com/fortune/2018-04/08/c_1122648124.htm";
-//        News news = crawlService.crawlPages(new Link(url, Source.XINHUANET));
-
-//        String url = "http://www.scmp.com/news/china/article/2140756/can-president-xi-jinping-succeed-chinas-hawaii-where-deng-xiaoping-failed";
-//        News news = crawlService.crawlPages(new Link(url, Source.SCMP));
-
-//        log.info("# crawled: {}", news);
-//        newsService.save(news);
-
-        List<Link> links = crawlService.crawlLinks(Source.SOHA);
-        links.forEach(link -> log.info("#{}", link.getUrl()));
-        links.forEach(link -> {
-            try {
+            List<Link> links = crawlService.crawlLinks(source);
+            for (Link link : links) {
+                log.info("# BEGIN crawl {}", link.getUrl());
+                link = linkService.save(link);
                 News news = crawlService.crawlPages(link, keywords);
                 if (news != null) {
                     newsService.save(news);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        });
+        }
     }
 }

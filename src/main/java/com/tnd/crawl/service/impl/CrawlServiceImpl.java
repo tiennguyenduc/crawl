@@ -9,13 +9,9 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,9 +29,8 @@ public class CrawlServiceImpl implements CrawlService {
 
         return linkElements
                 .stream()
-                .map(linkElement -> new Link(source.getUrl() + linkElement.attr("href"), source))
+                .map(linkElement -> new Link(source.getBaseUrl() + linkElement.attr("href"), source))
                 .distinct()
-//                .sorted(Comparator.comparingInt(l -> l.getUrl().length()))
                 .collect(Collectors.toList());
     }
 
@@ -44,53 +39,38 @@ public class CrawlServiceImpl implements CrawlService {
         News news = new News();
         news.url = link.getUrl();
 
-//        Document page = Jsoup.connect(link.getUrl()).get();
-//        Elements elements = page.select("[data-field]");
-//        elements.forEach(element -> {
-//            try {
-//                String fieldName = element.attr("data-field");
-//                Field field = News.class.getField(fieldName);
-//
-//                if ("body".equals(fieldName)) {
-//                    StringBuilder stringBuilder = new StringBuilder();
-//                    element.select("p").forEach(p -> stringBuilder.append(p.text()));
-//                    field.set(news, stringBuilder.toString());
-//                } else {
-//                    field.set(news, element.text());
-//                }
-//            } catch (NoSuchFieldException | IllegalAccessException e) {
-//                e.printStackTrace();
-//            }
-//        });
-
-        Document doc = Jsoup.connect(link.getUrl()).get();
+        Document page = Jsoup.connect(link.getUrl()).get();
 
         // check article
-        Elements page = doc.select("article");
-        if (page.isEmpty()) {
+        if (link.getSource() == Source.SOHA && page.select("article").isEmpty()) {
+            return null;
+        }
+        if (link.getSource() == Source.XINHUANET && page.select("div.h-news").isEmpty()) {
             return null;
         }
 
-//        Elements page = Jsoup.connect(link.getUrl()).get().select("[data-field]");
         List<String> fields = link.getSource().getFields();
 
         int index = 0;
         news.title = page.select(fields.get(index++)).text();
-        news.createddate = page.select(fields.get(index++)).text();
+        news.publishedAt = page.select(fields.get(index++)).text();
         news.author = page.select(fields.get(index++)).text();
-        news.source = page.select(fields.get(index++)).text();
+        news.copyright = page.select(fields.get(index++)).text();
 
         StringBuilder stringBuilder = new StringBuilder();
         page.select(fields.get(index)).select("p").forEach(p -> stringBuilder.append(p.text()));
-        news.body = stringBuilder.toString();
+        news.content = stringBuilder.toString();
+
+        news.source = link.getSource();
 
         // check keywords
-        for(String keyword : keywords) {
-            if (news.title.toLowerCase().contains(keyword) || news.body.toLowerCase().contains(keyword)) {
-                return news;
-            }
-        }
-
-        return null;
+//        for(String keyword : keywords) {
+//            if (news.title.toLowerCase().contains(keyword) || news.content.toLowerCase().contains(keyword)) {
+//                return news;
+//            }
+//        }
+//
+//        return null;
+        return news;
     }
 }

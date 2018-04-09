@@ -16,19 +16,24 @@ public class News {
 
     public String title;
 
-    @Column(name = "published_at")
-    public String createddate;
+    public String publishedAt;
 
     public String author;
 
-    public String source;
+    public String copyright;
 
-    @Column(name = "content")
-    public String body;
+    public String content;
 
-    @Transient
-    public String firstphoto;
+    public String tag;
 
-    @Transient
-    public String sapo;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    public Category category;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "link_id")
+    public Link link;
+
+    @Enumerated(EnumType.STRING)
+    public Source source;
 }
